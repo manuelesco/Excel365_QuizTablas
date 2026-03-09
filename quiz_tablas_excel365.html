@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quiz – Hojas en Excel 365</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Verdana,sans-serif;background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.app{background:#fff;max-width:800px;width:95%;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden}
+header{background:linear-gradient(135deg,#217346 0%,#2b8856 100%);color:#fff;padding:24px;text-align:center}
+main{padding:24px}
+.progress{margin-bottom:16px;font-weight:600;color:#217346}
+.question{font-size:1.2rem;margin-bottom:16px}
+.options{display:grid;gap:12px}
+.option-btn{padding:12px 14px;border-radius:10px;border:2px solid #217346;background:#f4f8f6;cursor:pointer;font-size:1rem;text-align:left;transition:.2s}
+.option-btn:hover{background:#e9f3ef}
+.option-btn.correct{background:#c8f7d2;border-color:#1f8f4a;color:#0f4d27}
+.option-btn.wrong{background:#ffd6d6;border-color:#c0392b;color:#7b1d14}
+.feedback{margin-top:16px;padding:12px;border-radius:10px;display:none}
+.feedback.correct{background:#eafaf1;color:#1f8f4a;border:1px solid #1f8f4a}
+.feedback.wrong{background:#fff0f0;color:#c0392b;border:1px solid #c0392b}
+.controls{margin-top:20px;display:flex;justify-content:space-between;align-items:center}
+button#nextBtn{background:#217346;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:1rem;cursor:pointer;display:none}
+button#restartBtn{background:#2a5298;color:#fff;border:none;padding:10px 18px;border-radius:10px;font-size:1rem;cursor:pointer;display:none}
+.score{font-weight:700}
+footer{text-align:center;padding:12px;color:#666;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<h1>🧠 Quiz – Autorrellenar en Excel 365</h1>
+<p>Selecciona la respuesta answer en cada q</p>
+</header>
+<main>
+<div class="progress" id="progress"></div>
+<div class="question" id="question"></div>
+<div class="options" id="options"></div>
+<div class="feedback" id="feedback"></div>
+<div class="controls">
+<div class="score" id="score"></div>
+<button id="nextBtn">Siguiente</button>
+<button id="restartBtn">Reiniciar quiz</button>
+</div>
+</main>
+<footer>
+Curso: Microsoft Excel 365 - Funciones y Herramientas Esenciales
+</footer>
+</div>
+
+<script>
+const questions = [
+{
+  q: "¿Qué son las tablas en Excel 365?",
+  options: [
+    "Gráficos automáticos para visualizar datos",
+    "Estructuras inteligentes que organizan rangos de datos",
+    "Plantillas prediseñadas para hojas de cálculo",
+    "Macros que automatizan tareas"
+  ],
+  answer: 1
+},
+{
+  q: "¿Qué agregan automáticamente las tablas en Excel al convertir un rango?",
+  options: [
+    "Botones de filtro en cada columna",
+    "Macros automáticas",
+    "Gráficos dinámicos",
+    "Formularios de entrada"
+  ],
+  answer: 0
+},
+{
+  q: "¿Qué característica permite que una tabla crezca al agregar nuevos datos?",
+  options: [
+    "Ordenamiento avanzado",
+    "Expansión dinámica",
+    "Formato condicional",
+    "Segmentación automática"
+  ],
+  answer: 1
+},
+{
+  q: "¿Qué diferencia principal tienen las tablas respecto a los rangos normales?",
+  options: [
+    "No permiten ordenar datos",
+    "Se expanden automáticamente al agregar datos",
+    "No permiten usar fórmulas",
+    "No tienen encabezados"
+  ],
+  answer: 1
+},
+{
+  q: "¿Qué atajo de teclado permite crear rápidamente una tabla en Excel?",
+  options: [
+    "Ctrl + E",
+    "Ctrl + T",
+    "Ctrl + L",
+    "Ctrl + Shift + E"
+  ],
+  answer: 1
+},
+{
+  q: "¿En qué pestaña se encuentra el botón para crear una tabla desde la cinta de opciones?",
+  options: [
+    "Datos",
+    "Insertar",
+    "Inicio",
+    "Revisar"
+  ],
+  answer: 1
+},
+{
+  q: "¿Qué sucede al convertir una tabla nuevamente en un rango?",
+  options: [
+    "Se eliminan todos los datos",
+    "Se pierde la funcionalidad de tabla",
+    "Se crean gráficos automáticamente",
+    "Se duplican los datos"
+  ],
+  answer: 1
+},
+{
+  q: "¿Qué herramienta visual permite filtrar datos de forma interactiva en una tabla?",
+  options: [
+    "Formato condicional",
+    "Segmentación de datos",
+    "Macros",
+    "Validación de datos"
+  ],
+  answer: 1
+},
+{
+  q: "¿Qué fila permite aplicar funciones como suma o promedio al final de una tabla?",
+  options: [
+    "Fila inicial",
+    "Fila de encabezado",
+    "Fila de totales",
+    "Fila dinámica"
+  ],
+  answer: 2
+},
+{
+  q: "¿Qué opción permite eliminar registros repetidos en una tabla?",
+  options: [
+    "Ordenar",
+    "Segmentación",
+    "Quitar duplicados",
+    "Filtrar"
+  ],
+  answer: 2
+}
+];
+
+let shuffled = [];
+let current = 0;
+let score = 0;
+let answered = false;
+
+function shuffle(array){
+return array.map(v=>({v,sort:Math.random()})).sort((a,b)=>a.sort-b.sort).map(({v})=>v);
+}
+
+function startQuiz(){
+shuffled = shuffle(questions);
+current = 0;
+score = 0;
+document.getElementById('restartBtn').style.display='none';
+loadQuestion();
+}
+
+function loadQuestion(){
+answered = false;
+const q = shuffled[current];
+document.getElementById('progress').textContent = `Pregunta ${current+1} de ${shuffled.length}`;
+document.getElementById('question').textContent = q.q;
+const optionsDiv = document.getElementById('options');
+optionsDiv.innerHTML = '';
+q.options.forEach((opt,i)=>{
+const btn = document.createElement('button');
+btn.className = 'option-btn';
+btn.textContent = opt;
+btn.onclick = ()=>selectAnswer(i,btn);
+optionsDiv.appendChild(btn);
+});
+const fb = document.getElementById('feedback');
+fb.style.display='none';
+fb.className='feedback';
+document.getElementById('nextBtn').style.display='none';
+document.getElementById('score').textContent = `Puntaje: ${score}`;
+}
+
+function selectAnswer(index,btn){
+if(answered) return;
+answered = true;
+const q = shuffled[current];
+const buttons = document.querySelectorAll('.option-btn');
+buttons.forEach(b=>b.disabled=true);
+const fb = document.getElementById('feedback');
+
+if(index === q.answer){
+btn.classList.add('correct');
+fb.textContent = '✅ Respuesta correcta';
+fb.classList.add('correct');
+score++;
+}else{
+btn.classList.add('wrong');
+buttons[q.answer].classList.add('correct');
+fb.textContent = `❌ Respuesta incorrecta. La respuesta correcta es: ${q.options[q.answer]}`;
+fb.classList.add('wrong');
+}
+fb.style.display='block';
+document.getElementById('score').textContent = `Puntaje: ${score}`;
+document.getElementById('nextBtn').style.display='inline-block';
+}
+
+function nextQuestion(){
+current++;
+if(current < shuffled.length){
+loadQuestion();
+}else{
+showResults();
+}
+}
+
+function showResults(){
+document.getElementById('question').textContent = '🎉 Quiz finalizado';
+document.getElementById('options').innerHTML = '';
+document.getElementById('progress').textContent = '';
+const fb = document.getElementById('feedback');
+fb.style.display='block';
+fb.className='feedback correct';
+fb.textContent = `Obtuviste ${score} de ${shuffled.length} respuestas correctas.`;
+document.getElementById('nextBtn').style.display='none';
+document.getElementById('restartBtn').style.display='inline-block';
+}
+
+// Eventos
+document.getElementById('nextBtn').onclick = nextQuestion;
+document.getElementById('restartBtn').onclick = startQuiz;
+
+startQuiz();
+</script>
+</body>
+</html>
